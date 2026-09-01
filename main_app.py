@@ -117,51 +117,19 @@ with st.sidebar:
 st.markdown('<p class="main-header">⚡ Spec2Verify: Specification-to-Verification Studio</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-text">Autonomous Multi-Agent Verification Pipeline powered by PragyanAI for Safety-Critical Enterprise Hardware (ISO 26262 / DO-254).</p>', unsafe_allow_html=True)
 
-# Multi-Output Dashboard Tabs (Expanded to 8 Tabs)
+# Reordered Multi-Output Dashboard Tabs
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-    "📊 Knowledge Map & HITL Review",
-    "📖 Spec Deep-Dive & HITL Editor",
-    "📚 Knowledge Bank & Standards",
-    "📝 Verification Plan",
-    "🧪 Test Cases & Rationale",
-    "🎯 Assertions & Coverage",
-    "🔗 Traceability Matrix",
-    "📈 Analytics & Step Logs"
+    "📖 Loaded Specification Deep-Dive & HITL Editor",
+    "📚 Knowledge Bank: Protocol References & Standards",
+    "📊 Human-in-the-Loop (HITL) Specification Proofreading",
+    "📝 Verification Plan (VPlan)",
+    "🧪 Generated Test Cases & Rationale",
+    "🎯 Assertions & Coverage Models",
+    "🔗 Golden Traceability Matrix",
+    "📈 Verification Analytics & Logs"
 ])
 
 with tab1:
-    st.subheader("Human-in-the-Loop (HITL) Specification Proofreading")
-    st.markdown("Review extracted atomic requirements and address AI-flagged specification doubts before launching downstream agentic generation.")
-    
-    if st.session_state.graph_state["spec_doubts"]:
-        st.warning("⚠️ Specification Ambiguities & Doubts Flagged by Auditor Agent:")
-        for doubt in st.session_state.graph_state["spec_doubts"]:
-            st.markdown(f"* **{doubt['doubt_id']}**: {doubt['issue']}")
-            st.info(f"💡 **Recommendation:** {doubt['recommendation']}")
-    
-    st.markdown("### 📋 Extracted Requirements Ledger")
-    if st.session_state.graph_state["requirements"]:
-        for req in st.session_state.graph_state["requirements"]:
-            st.checkbox(
-                f"**{req['req_id']}** (`{req['category']}` - `{req['priority']}`): {req['description']}",
-                value=True,
-                key=f"chk_{req['req_id']}"
-            )
-
-        st.markdown("---")
-        if not st.session_state.graph_state["is_spec_approved"]:
-            if st.button("✅ Finalize Specification & Launch Downstream Agents", type="primary"):
-                with st.spinner("Executing LangGraph Pipeline: VPlan $\rightarrow$ Testbench $\rightarrow$ Assertions $\rightarrow$ Coverage $\rightarrow$ Audit..."):
-                    st.session_state.graph_state["is_spec_approved"] = True
-                    st.session_state.graph_state = app_graph.invoke(st.session_state.graph_state)
-                st.success("Specification locked and verification bundle successfully generated!")
-                st.rerun()
-        else:
-            st.success("🔒 Specification is locked. Downstream verification artifacts have been synthesized.")
-    else:
-        st.info("👈 Select a sample specification from the sidebar or upload a document to begin.")
-
-with tab2:
     st.subheader("📖 Loaded Specification Deep-Dive & Interactive HITL Editor")
     st.markdown("Inspect the loaded specification text, examine multi-tier technical expansions (Beginner, Intermediate, Expert), and edit/save requirement definitions interactively.")
     
@@ -218,7 +186,7 @@ with tab2:
     else:
         st.info("👈 Please load or upload a specification from the sidebar to use the Deep-Dive & HITL Editor.")
 
-with tab3:
+with tab2:
     st.subheader("Knowledge Bank: Protocol References & Standards Mapping")
     if st.session_state.selected_spec_name and st.session_state.selected_spec_name in SAMPLE_SPECIFICATIONS:
         spec_info = SAMPLE_SPECIFICATIONS[st.session_state.selected_spec_name]
@@ -236,6 +204,38 @@ with tab3:
     else:
         st.markdown("Select one of the pre-loaded sample specifications from the sidebar to inspect its governing standards and protocol reference guidelines.")
 
+with tab3:
+    st.subheader("Human-in-the-Loop (HITL) Specification Proofreading")
+    st.markdown("Review extracted atomic requirements and address AI-flagged specification doubts before launching downstream agentic generation.")
+    
+    if st.session_state.graph_state["spec_doubts"]:
+        st.warning("⚠️ Specification Ambiguities & Doubts Flagged by Auditor Agent:")
+        for doubt in st.session_state.graph_state["spec_doubts"]:
+            st.markdown(f"* **{doubt['doubt_id']}**: {doubt['issue']}")
+            st.info(f"💡 **Recommendation:** {doubt['recommendation']}")
+    
+    st.markdown("### 📋 Extracted Requirements Ledger")
+    if st.session_state.graph_state["requirements"]:
+        for req in st.session_state.graph_state["requirements"]:
+            st.checkbox(
+                f"**{req['req_id']}** (`{req['category']}` - `{req['priority']}`): {req['description']}",
+                value=True,
+                key=f"chk_hitl_{req['req_id']}"
+            )
+
+        st.markdown("---")
+        if not st.session_state.graph_state["is_spec_approved"]:
+            if st.button("✅ Finalize Specification & Launch Downstream Agents", type="primary"):
+                with st.spinner("Executing LangGraph Pipeline: VPlan $\rightarrow$ Testbench $\rightarrow$ Assertions $\rightarrow$ Coverage $\rightarrow$ Audit..."):
+                    st.session_state.graph_state["is_spec_approved"] = True
+                    st.session_state.graph_state = app_graph.invoke(st.session_state.graph_state)
+                st.success("Specification locked and verification bundle successfully generated!")
+                st.rerun()
+        else:
+            st.success("🔒 Specification is locked. Downstream verification artifacts have been synthesized.")
+    else:
+        st.info("👈 Select a sample specification from the sidebar or upload a document to begin.")
+
 with tab4:
     st.subheader("Verification Plan (VPlan)")
     if st.session_state.graph_state["vplan"]:
@@ -244,7 +244,7 @@ with tab4:
                 st.markdown(f"**Verification Method:** `{vp['verification_method']}`")
                 st.markdown(f"**Strategy Summary:** {vp['strategy_summary']}")
     else:
-        st.info("Complete the HITL Specification Review in Tab 1 to generate the VPlan.")
+        st.info("Complete the HITL Specification Review in Tab 3 to generate the VPlan.")
 
 with tab5:
     st.subheader("Generated Test Cases, Objectives & Rationale")
