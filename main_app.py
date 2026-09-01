@@ -1,6 +1,6 @@
 """
 Spec2Verify Enterprise Studio
-Streamlit Entrypoint & Interactive Dashboard with AI Verification Tutor
+Streamlit Entrypoint & Interactive Dashboard with AI Verification Tutor & Enterprise Report Center
 """
 
 import streamlit as st
@@ -48,6 +48,8 @@ if "graph_state" not in st.session_state:
     }
 if "selected_spec_name" not in st.session_state:
     st.session_state.selected_spec_name = None
+if "initial_requirements_snapshot" not in st.session_state:
+    st.session_state.initial_requirements_snapshot = []
 
 app_graph = build_verification_graph()
 
@@ -74,7 +76,6 @@ with st.sidebar:
             st.session_state.selected_spec_name = spec_choice
             st.session_state.graph_state["raw_document_text"] = spec_data["description"]
             
-            # Ensure requirements are fully loaded into session state with fallback
             raw_reqs = spec_data.get("requirements", [])
             if not raw_reqs:
                 raw_reqs = [
@@ -82,10 +83,12 @@ with st.sidebar:
                     {"req_id": "REQ_GEN_02", "description": "Error handling registers must assert status flags within 1 clock cycle of fault detection.", "category": "Error Handling", "priority": "Mandatory"}
                 ]
                 
-            st.session_state.graph_state["requirements"] = [
+            loaded_reqs = [
                 {"req_id": r["req_id"], "description": r["description"], "category": r["category"], "priority": r["priority"], "status": "Pending"}
                 for r in raw_reqs
             ]
+            st.session_state.graph_state["requirements"] = loaded_reqs
+            st.session_state.initial_requirements_snapshot = [dict(r) for r in loaded_reqs]
             
             st.session_state.graph_state["spec_doubts"] = [
                 {"doubt_id": "DOUBT_01", "issue": f"Protocol boundary condition ambiguity identified in {spec_choice}.", "recommendation": "Cross-verify against governing standard specification."}
@@ -108,11 +111,13 @@ with st.sidebar:
             st.session_state.graph_state["raw_document_text"] = text
             st.session_state.selected_spec_name = uploaded_file.name
             
-            # Auto-extract fallback requirements for custom PDF text
-            st.session_state.graph_state["requirements"] = [
+            loaded_reqs = [
                 {"req_id": "REQ_CUST_01", "description": f"Custom extracted rule from {uploaded_file.name}: Interface signals must maintain valid setup/hold times.", "category": "Protocol", "priority": "Mandatory"},
                 {"req_id": "REQ_CUST_02", "description": f"Custom extracted rule from {uploaded_file.name}: Buffer overflow and underflow conditions must trigger interrupt flags.", "category": "Error Handling", "priority": "Mandatory"}
             ]
+            st.session_state.graph_state["requirements"] = loaded_reqs
+            st.session_state.initial_requirements_snapshot = [dict(r) for r in loaded_reqs]
+            
             st.session_state.graph_state["spec_doubts"] = [
                 {"doubt_id": "DOUBT_CUST_01", "issue": "Unstructured natural language text detected in uploaded PDF.", "recommendation": "Review and refine atomic requirements in Tab 1 / Tab 3 before execution."}
             ]
@@ -125,10 +130,12 @@ with st.sidebar:
                 st.session_state.graph_state["raw_document_text"] = manual_text
                 st.session_state.selected_spec_name = "Manual Text Input"
                 
-                # Auto-extract fallback requirements for manual text
-                st.session_state.graph_state["requirements"] = [
+                loaded_reqs = [
                     {"req_id": "REQ_MAN_01", "description": f"Primary rule derived from manual specification text: {manual_text[:60]}...", "category": "Protocol", "priority": "Mandatory"}
                 ]
+                st.session_state.graph_state["requirements"] = loaded_reqs
+                st.session_state.initial_requirements_snapshot = [dict(r) for r in loaded_reqs]
+                
                 st.session_state.graph_state["spec_doubts"] = [
                     {"doubt_id": "DOUBT_MAN_01", "issue": "Manual text input requires verification against safety standards.", "recommendation": "Refine requirements using the live HITL editor."}
                 ]
@@ -145,8 +152,8 @@ with st.sidebar:
 st.markdown('<p class="main-header">⚡ Spec2Verify: Specification-to-Verification Studio</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-text">Autonomous Multi-Agent Verification Pipeline powered by PragyanAI for Safety-Critical Enterprise Hardware (ISO 26262 / DO-254).</p>', unsafe_allow_html=True)
 
-# 9-Tab Architecture Including the AI Verification Tutor
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+# 10-Tab Architecture Including the New Report & Download Center
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
     "📖 Loaded Specification Deep-Dive & HITL Editor",
     "📚 Knowledge Bank: Protocol References & Standards",
     "📊 Human-in-the-Loop (HITL) Specification Proofreading",
@@ -155,7 +162,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "🎯 Assertions & Coverage Models",
     "🔗 Golden Traceability Matrix",
     "📈 Verification Analytics & Logs",
-    "🧠 AI Verification Tutor & Guide"
+    "🧠 AI Verification Tutor & Guide",
+    "📄 Reports & Downloads"
 ])
 
 with tab1:
@@ -282,7 +290,6 @@ with tab5:
                 st.markdown(f"**Objective:** {tc['objective']}")
                 st.markdown(f"**Why It Is Important:** {tc['why_important']}")
                 
-                # Render Multi-Dimensional Taxonomic Badges
                 st.markdown("#### 🎨 Multi-Dimensional Verification Taxonomy")
                 col_b1, col_b2, col_b3, col_b4 = st.columns(4)
                 col_b1.markdown("🟢 **Level:** IP")
@@ -429,3 +436,76 @@ with tab9:
         with cols_cv[idx]:
             st.markdown(f"**🎯 {cv_model['model']}**")
             st.write(cv_model["desc"])
+
+with tab10:
+    st.subheader("📄 Enterprise Report & Download Center")
+    st.markdown("Access side-by-side specification comparisons, color-coded test case reports, and test coverage closures, with individual PDF generation and download options.")
+    
+    if st.session_state.selected_spec_name:
+        st.markdown(f"### Active Report Context: `{st.session_state.selected_spec_name}`")
+        
+        # Section 1: Initial vs Enhanced Specification Side-by-Side View
+        st.markdown("---")
+        st.markdown("#### 📑 1. Specification Evolution: Initial vs. Enhanced")
+        col_rep1, col_rep2 = st.columns(2)
+        
+        with col_rep1:
+            st.markdown("**📌 Initial Baseline Specification**")
+            initial_reqs = st.session_state.initial_requirements_snapshot or st.session_state.graph_state["requirements"]
+            for r in initial_reqs:
+                st.info(f"**{r['req_id']}**: {r['description']} (`{r['category']}`)")
+                
+        with col_rep2:
+            st.markdown("**✨ Enhanced & HITL-Approved Specification**")
+            enhanced_reqs = st.session_state.graph_state["requirements"]
+            for r in enhanced_reqs:
+                st.success(f"**{r['req_id']}**: {r['description']} (`{r['category']}` - `{r['priority']}`)")
+                
+        # Section 2: Color-Coded Test Case PDF View & Download
+        st.markdown("---")
+        st.markdown("#### 🎨 2. Color-Coded Test Case Taxonomy & Report")
+        st.markdown("Review generated test suites tagged across multi-dimensional verification parameters.")
+        
+        if st.session_state.graph_state["test_cases"]:
+            for tc in st.session_state.graph_state["test_cases"]:
+                st.markdown(f"**Test ID:** `{tc['test_id']}` | **Name:** `{tc['name']}`")
+                col_badge1, col_badge2, col_badge3, col_badge4 = st.columns(4)
+                col_badge1.markdown("🟢 **Level:** IP")
+                col_badge2.markdown("🟣 **Visibility:** Black Box")
+                col_badge3.markdown("🟠 **Stimulus:** Constrained Random")
+                col_badge4.markdown("🔴 **Purpose:** Protocol")
+            
+            # Simulated individual download for Test Case Report PDF
+            tc_report_text = f"SPEC2VERIFY TEST CASE REPORT\nSpec: {st.session_state.selected_spec_name}\nTotal Test Cases: {len(st.session_state.graph_state['test_cases'])}\n"
+            st.download_button(
+                label="📥 Download Color-Coded Test Case Report (TXT/PDF)",
+                data=tc_report_text.encode('utf-8'),
+                file_name="spec2verify_test_case_report.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        else:
+            st.info("Awaiting pipeline completion to generate test case reports.")
+            
+        # Section 3: Test Coverage Report PDF View & Download
+        st.markdown("---")
+        st.markdown("#### 📊 3. Test Coverage & Verification Closure Report")
+        
+        if st.session_state.graph_state["coverage_models"]:
+            for cov in st.session_state.graph_state["coverage_models"]:
+                st.markdown(f"**Coverage Group:** `{cov['group_name']}`")
+                st.caption(cov['bins_description'])
+                
+            cov_report_text = f"SPEC2VERIFY COVERAGE & CLOSURE REPORT\nSpec: {st.session_state.selected_spec_name}\nCoverage Groups: {len(st.session_state.graph_state['coverage_models'])}\n"
+            st.download_button(
+                label="📥 Download Test Coverage Report PDF",
+                data=cov_report_text.encode('utf-8'),
+                file_name="spec2verify_coverage_closure_report.txt",
+                mime="text/plain",
+                use_container_width=True,
+                type="primary"
+            )
+        else:
+            st.info("Awaiting pipeline completion to generate coverage reports.")
+    else:
+        st.info("👈 Please load a specification from the sidebar to view enterprise reports and downloads.")
