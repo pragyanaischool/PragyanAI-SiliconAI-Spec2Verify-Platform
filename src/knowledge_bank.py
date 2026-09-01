@@ -1,10 +1,10 @@
 """
 Spec2Verify Knowledge Bank
 Contains pre-loaded sample hardware specifications, governing industry standards (AMBA, JEDEC, IEEE, NXP),
-and protocol reference snippets for immediate system testing and verification exploration.
+and dynamic registration handlers for custom user-uploaded specifications.
 """
 
-SAMPLE_SPECIFICATIONS = {
+INITIAL_SAMPLE_SPECIFICATIONS = {
     "AXI4-Stream FIFO Controller": {
         "domain": "On-Chip Interconnect",
         "standard_ref": "ARM AMBA AXI4-Stream Protocol Specification v1.0",
@@ -110,3 +110,25 @@ SAMPLE_SPECIFICATIONS = {
         ]
     }
 }
+
+class KnowledgeBankManager:
+    """Manages pre-loaded and dynamically added custom hardware specifications."""
+    def __init__(self):
+        self.specifications = INITIAL_SAMPLE_SPECIFICATIONS.copy()
+
+    def add_specification(self, name: str, domain: str, standard_ref: str, description: str, requirements: list):
+        """Adds a custom user-uploaded or manually entered specification to the bank."""
+        self.specifications[name] = {
+            "domain": domain,
+            "standard_ref": standard_ref,
+            "description": description,
+            "requirements": requirements,
+            "reference_snippets": [
+                f"Custom User Upload / Dynamic Source: {name}",
+                f"Governing Standard Reference: {standard_ref}"
+            ]
+        }
+
+# Global manager instance and alias for backward compatibility
+kb_manager = KnowledgeBankManager()
+SAMPLE_SPECIFICATIONS = kb_manager.specifications
