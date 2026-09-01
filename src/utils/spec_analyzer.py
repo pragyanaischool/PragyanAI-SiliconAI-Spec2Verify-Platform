@@ -17,7 +17,7 @@ def analyze_requirement_tiered(req_id: str, description: str, category: str) -> 
     # Tier 2: Intermediate (Protocol & Verification View)
     intermediate = (
         f"Category: [{category}]. From a verification perspective, this rule governs "
-        f"signal state transitions and handshake handshakes between master and slave endpoints. "
+        f"signal state transitions and handshakes between master and slave endpoints. "
         f"Engineers must write constrained-random transaction sequences to toggle control lines "
         f"and monitor bus stability during active transfer cycles."
     )
