@@ -9,6 +9,7 @@ from pypdf import PdfReader
 from src.knowledge_bank import SAMPLE_SPECIFICATIONS
 from src.graph import build_verification_graph
 from src.utils.pdf_exporter import generate_pdf_report
+from src.utils.spec_analyzer import analyze_requirement_tiered
 
 # Page Configuration
 st.set_page_config(
@@ -116,9 +117,10 @@ with st.sidebar:
 st.markdown('<p class="main-header">⚡ Spec2Verify: Specification-to-Verification Studio</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-text">Autonomous Multi-Agent Verification Pipeline powered by PragyanAI for Safety-Critical Enterprise Hardware (ISO 26262 / DO-254).</p>', unsafe_allow_html=True)
 
-# Multi-Output Dashboard Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+# Multi-Output Dashboard Tabs (Expanded to 8 Tabs)
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📊 Knowledge Map & HITL Review",
+    "📖 Spec Deep-Dive & HITL Editor",
     "📚 Knowledge Bank & Standards",
     "📝 Verification Plan",
     "🧪 Test Cases & Rationale",
@@ -160,6 +162,63 @@ with tab1:
         st.info("👈 Select a sample specification from the sidebar or upload a document to begin.")
 
 with tab2:
+    st.subheader("📖 Loaded Specification Deep-Dive & Interactive HITL Editor")
+    st.markdown("Inspect the loaded specification text, examine multi-tier technical expansions (Beginner, Intermediate, Expert), and edit/save requirement definitions interactively.")
+    
+    if st.session_state.selected_spec_name:
+        st.markdown(f"### Active Specification: `{st.session_state.selected_spec_name}`")
+        
+        with st.expander("📄 View Raw Loaded Specification Text", expanded=False):
+            st.text_area("Raw Text Content", value=st.session_state.graph_state["raw_document_text"], height=200, disabled=True)
+            
+        st.markdown("---")
+        st.markdown("### 🔍 Tiered Requirement Analysis & Live HITL Editor")
+        
+        if st.session_state.graph_state["requirements"]:
+            updated_requirements = []
+            for i, req in enumerate(st.session_state.graph_state["requirements"]):
+                with st.expander(f"Requirement [{req['req_id']}] - {req['category']} ({req['priority']})"):
+                    # Live HITL Editing Fields
+                    new_desc = st.text_area(f"Edit Description ({req['req_id']})", value=req["description"], key=f"edit_desc_{i}")
+                    
+                    cat_options = ["Protocol", "Timing", "Error Handling", "Performance", "Functional"]
+                    default_cat_idx = cat_options.index(req["category"]) if req["category"] in cat_options else 0
+                    new_cat = st.selectbox(f"Category ({req['req_id']})", cat_options, index=default_cat_idx, key=f"edit_cat_{i}")
+                    
+                    pri_options = ["Mandatory", "Desirable", "Optional"]
+                    default_pri_idx = pri_options.index(req["priority"]) if req["priority"] in pri_options else 0
+                    new_pri = st.selectbox(f"Priority ({req['req_id']})", pri_options, index=default_pri_idx, key=f"edit_pri_{i}")
+                    
+                    updated_requirements.append({
+                        "req_id": req["req_id"],
+                        "description": new_desc,
+                        "category": new_cat,
+                        "priority": new_pri,
+                        "status": req.get("status", "Pending")
+                    })
+                    
+                    st.markdown("---")
+                    st.markdown("#### 🎓 Multi-Tier Technical Breakdown")
+                    tiers = analyze_requirement_tiered(req["req_id"], new_desc, new_cat)
+                    
+                    sub_t1, sub_t2, sub_t3 = st.tabs(["🟢 Beginner", "🟡 Intermediate", "🔴 Expert"])
+                    with sub_t1:
+                        st.info(tiers["beginner"])
+                    with sub_t2:
+                        st.warning(tiers["intermediate"])
+                    with sub_t3:
+                        st.error(tiers["expert"])
+            
+            if st.button("💾 Save Requirement Edits", type="primary"):
+                st.session_state.graph_state["requirements"] = updated_requirements
+                st.success("Requirements updated successfully across the session state!")
+                st.rerun()
+        else:
+            st.info("No requirements extracted yet. Load a specification from the sidebar.")
+    else:
+        st.info("👈 Please load or upload a specification from the sidebar to use the Deep-Dive & HITL Editor.")
+
+with tab3:
     st.subheader("Knowledge Bank: Protocol References & Standards Mapping")
     if st.session_state.selected_spec_name and st.session_state.selected_spec_name in SAMPLE_SPECIFICATIONS:
         spec_info = SAMPLE_SPECIFICATIONS[st.session_state.selected_spec_name]
@@ -177,7 +236,7 @@ with tab2:
     else:
         st.markdown("Select one of the pre-loaded sample specifications from the sidebar to inspect its governing standards and protocol reference guidelines.")
 
-with tab3:
+with tab4:
     st.subheader("Verification Plan (VPlan)")
     if st.session_state.graph_state["vplan"]:
         for vp in st.session_state.graph_state["vplan"]:
@@ -187,7 +246,7 @@ with tab3:
     else:
         st.info("Complete the HITL Specification Review in Tab 1 to generate the VPlan.")
 
-with tab4:
+with tab5:
     st.subheader("Generated Test Cases, Objectives & Rationale")
     if st.session_state.graph_state["test_cases"]:
         for tc in st.session_state.graph_state["test_cases"]:
@@ -198,7 +257,7 @@ with tab4:
     else:
         st.info("Awaiting downstream test case generation.")
 
-with tab5:
+with tab6:
     st.subheader("SystemVerilog Assertions (SVA) & Functional Coverage Models")
     if st.session_state.graph_state["assertions"]:
         st.markdown("### 🎯 Formal SVA Checkers")
@@ -214,7 +273,7 @@ with tab5:
     else:
         st.info("Assertions and coverage models will render here once pipeline completes.")
 
-with tab6:
+with tab7:
     st.subheader("Golden Traceability Matrix (Requirement $\rightarrow$ Test $\rightarrow$ Result $\rightarrow$ Evidence)")
     st.markdown("Unbroken chain of custody for enterprise safety audits (ISO 26262 / DO-254).")
     if st.session_state.graph_state["traceability_matrix"]:
@@ -254,7 +313,7 @@ with tab6:
     else:
         st.info("Complete specification review and run pipeline to generate audit evidence.")
 
-with tab7:
+with tab8:
     st.subheader("Verification Analytics & Step-by-Step Execution Logs")
     
     k1, k2, k3, k4 = st.columns(4)
