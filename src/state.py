@@ -34,11 +34,14 @@ class TestCase(TypedDict):
     why_important: str
     code_snippet: str
 
-class AssertionItem(TypedDict):
+class Assertion(TypedDict):
     assertion_id: str
     req_id: str
     name: str
     sva_code: str
+
+# Backwards-compatibility alias
+AssertionItem = Assertion
 
 class CoverageModel(TypedDict):
     cover_id: str
@@ -68,7 +71,7 @@ class AgentState(TypedDict):
     is_spec_approved: bool
     vplan: List[VerificationPlan]
     test_cases: List[TestCase]
-    assertions: List[AssertionItem]
+    assertions: List[Assertion]
     coverage_models: List[CoverageModel]
     traceability_matrix: List[TraceabilityRow]
     execution_logs: List[LogRecord]
