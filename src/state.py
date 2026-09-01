@@ -1,6 +1,6 @@
 """
 Spec2Verify Central Graph State Definition
-Defines shared typing and data structures for multi-agent hardware verification workflows.
+Defines shared typing, TypedDicts, and aliases for multi-agent hardware verification workflows.
 """
 
 from typing import TypedDict, List, Dict, Any
@@ -17,11 +17,14 @@ class SpecDoubt(TypedDict):
     issue: str
     recommendation: str
 
-class VPlanItem(TypedDict):
+class VerificationPlan(TypedDict):
     vplan_id: str
     req_id: str
     verification_method: str
     strategy_summary: str
+
+# Backwards-compatibility alias
+VPlanItem = VerificationPlan
 
 class TestCase(TypedDict):
     test_id: str
@@ -63,7 +66,7 @@ class AgentState(TypedDict):
     spec_doubts: List[SpecDoubt]
     human_feedback: str
     is_spec_approved: bool
-    vplan: List[VPlanItem]
+    vplan: List[VerificationPlan]
     test_cases: List[TestCase]
     assertions: List[AssertionItem]
     coverage_models: List[CoverageModel]
