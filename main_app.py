@@ -12,25 +12,22 @@ from src.utils.pdf_exporter import generate_pdf_report
 
 # Page Configuration
 st.set_page_config(
-    page_title="Spec2Verify Enterprise Studio",
+    page_title="Spec2Verify | PragyanAI Studio",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS Styling for Enterprise Polish
+# Custom CSS Styling for Impressive Enterprise Polish & PragyanAI Theme
 st.markdown("""
     <style>
-    .main-header { font-size: 2.2rem; font-weight: 700; color: #1E3A8A; }
-    .sub-text { font-size: 1.1rem; color: #4B5563; }
+    .main-header { font-size: 2.2rem; font-weight: 700; color: #1E3A8A; letter-spacing: -0.5px; }
+    .sub-text { font-size: 1.1rem; color: #4B5563; margin-bottom: 1.5rem; }
     .stAlert { border-radius: 8px; }
+    div.stButton > button:first-child { border-radius: 6px; font-weight: 600; }
+    .sidebar-brand { padding: 10px 0px 20px 0px; text-align: center; }
     </style>
 """, unsafe_allow_html=True)
-
-# Header Section
-st.markdown('<p class="main-header">⚡ Spec2Verify: Specification-to-Verification Studio</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-text">Autonomous Multi-Agent Verification Pipeline from Hardware Specs to Golden Audit Evidence.</p>', unsafe_allow_html=True)
-st.markdown("---")
 
 # Initialize Session State
 if "graph_state" not in st.session_state:
@@ -52,59 +49,72 @@ if "selected_spec_name" not in st.session_state:
 
 app_graph = build_verification_graph()
 
-# Sidebar Control Panel
-st.sidebar.header("📁 Specification Source")
-input_mode = st.sidebar.radio(
-    "Choose Input Method",
-    ["Sample Library (8 Specs)", "Custom PDF Upload", "Manual Specification Text"]
-)
+# Sidebar Branding & Control Panel
+with st.sidebar:
+    st.markdown('<div class="sidebar-brand">', unsafe_allow_html=True)
+    try:
+        st.image("PragyanAI_Transperent.png", width=220)
+    except Exception:
+        st.markdown("### ⚡ PragyanAI Studio")
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("---")
+    
+    st.header("📁 Specification Source")
+    input_mode = st.radio(
+        "Choose Input Method",
+        ["Sample Library (8 Specs)", "Custom PDF Upload", "Manual Specification Text"]
+    )
 
-if input_mode == "Sample Library (8 Specs)":
-    spec_choice = st.sidebar.selectbox("Select Hardware Protocol / Spec", list(SAMPLE_SPECIFICATIONS.keys()))
-    if st.sidebar.button("Load Sample Specification", type="primary"):
-        spec_data = SAMPLE_SPECIFICATIONS[spec_choice]
-        st.session_state.selected_spec_name = spec_choice
-        st.session_state.graph_state["raw_document_text"] = spec_data["description"]
-        st.session_state.graph_state["requirements"] = [
-            {"req_id": r["req_id"], "description": r["description"], "category": r["category"], "priority": r["priority"], "status": "Pending"}
-            for r in spec_data["requirements"]
-        ]
-        st.session_state.graph_state["spec_doubts"] = [
-            {"doubt_id": "DOUBT_01", "issue": f"Protocol boundary condition ambiguity identified in {spec_choice}.", "recommendation": "Cross-verify against governing standard specification."}
-        ]
-        st.session_state.graph_state["is_spec_approved"] = False
-        st.session_state.graph_state["vplan"] = []
-        st.session_state.graph_state["test_cases"] = []
-        st.session_state.graph_state["assertions"] = []
-        st.session_state.graph_state["coverage_models"] = []
-        st.session_state.graph_state["traceability_matrix"] = []
-        st.session_state.graph_state["execution_logs"] = []
-        st.success(f"Loaded '{spec_choice}' successfully!")
-        st.rerun()
+    if input_mode == "Sample Library (8 Specs)":
+        spec_choice = st.selectbox("Select Hardware Protocol / Spec", list(SAMPLE_SPECIFICATIONS.keys()))
+        if st.button("Load Sample Specification", type="primary", use_container_width=True):
+            spec_data = SAMPLE_SPECIFICATIONS[spec_choice]
+            st.session_state.selected_spec_name = spec_choice
+            st.session_state.graph_state["raw_document_text"] = spec_data["description"]
+            st.session_state.graph_state["requirements"] = [
+                {"req_id": r["req_id"], "description": r["description"], "category": r["category"], "priority": r["priority"], "status": "Pending"}
+                for r in spec_data["requirements"]
+            ]
+            st.session_state.graph_state["spec_doubts"] = [
+                {"doubt_id": "DOUBT_01", "issue": f"Protocol boundary condition ambiguity identified in {spec_choice}.", "recommendation": "Cross-verify against governing standard specification."}
+            ]
+            st.session_state.graph_state["is_spec_approved"] = False
+            st.session_state.graph_state["vplan"] = []
+            st.session_state.graph_state["test_cases"] = []
+            st.session_state.graph_state["assertions"] = []
+            st.session_state.graph_state["coverage_models"] = []
+            st.session_state.graph_state["traceability_matrix"] = []
+            st.session_state.graph_state["execution_logs"] = []
+            st.success(f"Loaded '{spec_choice}' successfully!")
+            st.rerun()
 
-elif input_mode == "Custom PDF Upload":
-    uploaded_file = st.sidebar.file_uploader("Upload Microarchitecture Spec / Datasheet", type=["pdf"])
-    if uploaded_file:
-        reader = PdfReader(uploaded_file)
-        text = "".join([page.extract_text() for page in reader.pages])
-        st.session_state.graph_state["raw_document_text"] = text
-        st.session_state.selected_spec_name = uploaded_file.name
-        st.success(f"Loaded PDF '{uploaded_file.name}' ({len(text)} characters).")
+    elif input_mode == "Custom PDF Upload":
+        uploaded_file = st.file_uploader("Upload Microarchitecture Spec / Datasheet", type=["pdf"])
+        if uploaded_file:
+            reader = PdfReader(uploaded_file)
+            text = "".join([page.extract_text() for page in reader.pages])
+            st.session_state.graph_state["raw_document_text"] = text
+            st.session_state.selected_spec_name = uploaded_file.name
+            st.success(f"Loaded PDF '{uploaded_file.name}' ({len(text)} characters).")
 
-else:  # Manual Text Input
-    manual_text = st.sidebar.text_area("Enter Specification Text", height=200, placeholder="Paste bus protocol or microarchitecture details here...")
-    if st.sidebar.button("Process Manual Text"):
-        if manual_text.strip():
-            st.session_state.graph_state["raw_document_text"] = manual_text
-            st.session_state.selected_spec_name = "Manual Text Input"
-            st.success("Manual specification loaded successfully!")
-        else:
-            st.sidebar.error("Please enter valid specification text.")
+    else:  # Manual Text Input
+        manual_text = st.text_area("Enter Specification Text", height=150, placeholder="Paste bus protocol or microarchitecture details here...")
+        if st.button("Process Manual Text", use_container_width=True):
+            if manual_text.strip():
+                st.session_state.graph_state["raw_document_text"] = manual_text
+                st.session_state.selected_spec_name = "Manual Text Input"
+                st.success("Manual specification loaded successfully!")
+            else:
+                st.error("Please enter valid specification text.")
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🛠️ System Status")
-st.sidebar.info(f"Active Spec: `{st.session_state.selected_spec_name or 'None'}`")
-st.sidebar.info(f"Spec Status: `{'Approved & Locked' if st.session_state.graph_state['is_spec_approved'] else 'Pending Proofreading'}`")
+    st.markdown("---")
+    st.markdown("### 🛠️ System Status")
+    st.info(f"Active Spec: **{st.session_state.selected_spec_name or 'None'}**")
+    st.info(f"Status: **{'Locked & Verified' if st.session_state.graph_state['is_spec_approved'] else 'Pending Proofreading'}**")
+
+# Main Header Section
+st.markdown('<p class="main-header">⚡ Spec2Verify: Specification-to-Verification Studio</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-text">Autonomous Multi-Agent Verification Pipeline powered by PragyanAI for Safety-Critical Enterprise Hardware (ISO 26262 / DO-254).</p>', unsafe_allow_html=True)
 
 # Multi-Output Dashboard Tabs
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
@@ -214,18 +224,17 @@ with tab6:
         col_dl1, col_dl2 = st.columns(2)
         
         with col_dl1:
-            # CSV Download
             csv_data = df_trace.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download CSV Audit Table",
                 data=csv_data,
                 file_name="spec2verify_traceability.csv",
-                mime="text/csv"
+                mime="text/csv",
+                use_container_width=True
             )
             
         with col_dl2:
-            # PDF Download Report
-            if st.button("📄 Generate Executive PDF Report"):
+            if st.button("📄 Generate Executive PDF Report", use_container_width=True):
                 with st.spinner("Compiling enterprise verification PDF report..."):
                     pdf_path = generate_pdf_report(
                         st.session_state.graph_state,
@@ -239,7 +248,8 @@ with tab6:
                         data=pdf_bytes,
                         file_name="spec2verify_closure_report.pdf",
                         mime="application/pdf",
-                        type="primary"
+                        type="primary",
+                        use_container_width=True
                     )
     else:
         st.info("Complete specification review and run pipeline to generate audit evidence.")
@@ -247,7 +257,6 @@ with tab6:
 with tab7:
     st.subheader("Verification Analytics & Step-by-Step Execution Logs")
     
-    # KPI Metrics Row
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Requirements", len(st.session_state.graph_state["requirements"]))
     k2.metric("Test Cases", len(st.session_state.graph_state["test_cases"]))
@@ -256,7 +265,6 @@ with tab7:
     
     st.markdown("---")
     
-    # Charts Section
     if st.session_state.graph_state["requirements"]:
         ch1, ch2 = st.columns(2)
         with ch1:
