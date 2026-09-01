@@ -1,7 +1,7 @@
 """
 Spec2Verify Knowledge Bank
 Contains pre-loaded sample hardware specifications, governing industry standards (AMBA, JEDEC, IEEE, NXP),
-and protocol reference snippets for immediate offline or online system testing.
+and protocol reference snippets for immediate system testing and verification exploration.
 """
 
 SAMPLE_SPECIFICATIONS = {
