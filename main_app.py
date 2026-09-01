@@ -254,6 +254,21 @@ with tab5:
             with st.expander(f"{tc['test_id']}: {tc['name']}"):
                 st.markdown(f"**Objective:** {tc['objective']}")
                 st.markdown(f"**Why It Is Important:** {tc['why_important']}")
+                
+                # Render Multi-Dimensional Taxonomic Badges
+                st.markdown("#### 🎨 Multi-Dimensional Verification Taxonomy")
+                col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+                col_b1.markdown("🟢 **Level:** IP")
+                col_b2.markdown("🟣 **Visibility:** Black Box")
+                col_b3.markdown("🟠 **Stimulus:** Constrained Random")
+                col_b4.markdown("🔴 **Purpose:** Protocol")
+                
+                col_b5, col_b6, col_b7, col_b8 = st.columns(4)
+                col_b5.markdown("🔵 **Scenario:** Corner / Stress")
+                col_b6.markdown("🟣 **Method:** Simulation + SVA")
+                col_b7.markdown("🟤 **Coverage:** Cross Coverage")
+                col_b8.markdown("⚪ **Execution:** Nightly Regression")
+                
                 st.code(tc['code_snippet'], language="systemverilog")
     else:
         st.info("Awaiting downstream test case generation.")
