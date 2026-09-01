@@ -51,6 +51,12 @@ class TraceabilityRow(TypedDict):
     assertion_id: str
     status: str
 
+class LogRecord(TypedDict):
+    timestamp: str
+    agent: str
+    message: str
+    status: str
+
 class AgentState(TypedDict):
     raw_document_text: str
     requirements: List[Requirement]
@@ -62,4 +68,4 @@ class AgentState(TypedDict):
     assertions: List[AssertionItem]
     coverage_models: List[CoverageModel]
     traceability_matrix: List[TraceabilityRow]
-    execution_logs: List[Dict[str, Any]]
+    execution_logs: List[LogRecord]
