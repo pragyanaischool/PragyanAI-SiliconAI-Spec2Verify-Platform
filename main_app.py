@@ -8,6 +8,7 @@ import pandas as pd
 from pypdf import PdfReader
 from src.knowledge_bank import SAMPLE_SPECIFICATIONS
 from src.graph import build_verification_graph
+from src.utils.pdf_exporter import generate_pdf_report
 
 # Page Configuration
 st.set_page_config(
@@ -164,7 +165,7 @@ with tab2:
         for ref in spec_info["reference_snippets"]:
             st.info(f"• {ref}")
     else:
-        st.markdown("Select one of the 8 pre-loaded sample specifications from the sidebar to inspect its governing standards and protocol reference guidelines.")
+        st.markdown("Select one of the pre-loaded sample specifications from the sidebar to inspect its governing standards and protocol reference guidelines.")
 
 with tab3:
     st.subheader("Verification Plan (VPlan)")
@@ -210,16 +211,38 @@ with tab6:
         df_trace = pd.DataFrame(st.session_state.graph_state["traceability_matrix"])
         st.dataframe(df_trace, use_container_width=True)
         
-        # Export options
-        csv_data = df_trace.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Traceability Matrix (CSV)",
-            data=csv_data,
-            file_name="spec2verify_traceability_matrix.csv",
-            mime="text/csv"
-        )
+        col_dl1, col_dl2 = st.columns(2)
+        
+        with col_dl1:
+            # CSV Download
+            csv_data = df_trace.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download CSV Audit Table",
+                data=csv_data,
+                file_name="spec2verify_traceability.csv",
+                mime="text/csv"
+            )
+            
+        with col_dl2:
+            # PDF Download Report
+            if st.button("📄 Generate Executive PDF Report"):
+                with st.spinner("Compiling enterprise verification PDF report..."):
+                    pdf_path = generate_pdf_report(
+                        st.session_state.graph_state,
+                        st.session_state.selected_spec_name or "Custom Specification"
+                    )
+                    with open(pdf_path, "rb") as pdf_file:
+                        pdf_bytes = pdf_file.read()
+                        
+                    st.download_button(
+                        label="📥 Download Signed PDF Closure Report",
+                        data=pdf_bytes,
+                        file_name="spec2verify_closure_report.pdf",
+                        mime="application/pdf",
+                        type="primary"
+                    )
     else:
-        st.info("Audit package available after simulation execution runs.")
+        st.info("Complete specification review and run pipeline to generate audit evidence.")
 
 with tab7:
     st.subheader("Verification Analytics & Step-by-Step Execution Logs")
