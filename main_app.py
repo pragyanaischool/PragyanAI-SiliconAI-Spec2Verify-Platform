@@ -1,6 +1,6 @@
 """
 Spec2Verify Enterprise Studio
-Streamlit Entrypoint & Interactive Dashboard
+Streamlit Entrypoint & Interactive Dashboard with AI Verification Tutor
 """
 
 import streamlit as st
@@ -10,6 +10,7 @@ from src.knowledge_bank import SAMPLE_SPECIFICATIONS
 from src.graph import build_verification_graph
 from src.utils.pdf_exporter import generate_pdf_report
 from src.utils.spec_analyzer import analyze_requirement_tiered
+from src.agents.tutor_agent import get_tutor_guidance
 
 # Page Configuration
 st.set_page_config(
@@ -19,7 +20,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS Styling for Impressive Enterprise Polish & PragyanAI Theme
+# Custom CSS Styling
 st.markdown("""
     <style>
     .main-header { font-size: 2.2rem; font-weight: 700; color: #1E3A8A; letter-spacing: -0.5px; }
@@ -50,7 +51,7 @@ if "selected_spec_name" not in st.session_state:
 
 app_graph = build_verification_graph()
 
-# Sidebar Branding & Control Panel
+# Sidebar Control Panel
 with st.sidebar:
     st.markdown('<div class="sidebar-brand">', unsafe_allow_html=True)
     try:
@@ -98,7 +99,7 @@ with st.sidebar:
             st.session_state.selected_spec_name = uploaded_file.name
             st.success(f"Loaded PDF '{uploaded_file.name}' ({len(text)} characters).")
 
-    else:  # Manual Text Input
+    else:
         manual_text = st.text_area("Enter Specification Text", height=150, placeholder="Paste bus protocol or microarchitecture details here...")
         if st.button("Process Manual Text", use_container_width=True):
             if manual_text.strip():
@@ -117,8 +118,8 @@ with st.sidebar:
 st.markdown('<p class="main-header">⚡ Spec2Verify: Specification-to-Verification Studio</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-text">Autonomous Multi-Agent Verification Pipeline powered by PragyanAI for Safety-Critical Enterprise Hardware (ISO 26262 / DO-254).</p>', unsafe_allow_html=True)
 
-# Reordered Multi-Output Dashboard Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+# 9-Tab Architecture Including the AI Verification Tutor
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "📖 Loaded Specification Deep-Dive & HITL Editor",
     "📚 Knowledge Bank: Protocol References & Standards",
     "📊 Human-in-the-Loop (HITL) Specification Proofreading",
@@ -126,12 +127,13 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🧪 Generated Test Cases & Rationale",
     "🎯 Assertions & Coverage Models",
     "🔗 Golden Traceability Matrix",
-    "📈 Verification Analytics & Logs"
+    "📈 Verification Analytics & Logs",
+    "🧠 AI Verification Tutor & Guide"
 ])
 
 with tab1:
     st.subheader("📖 Loaded Specification Deep-Dive & Interactive HITL Editor")
-    st.markdown("Inspect the loaded specification text, examine multi-tier technical expansions (Beginner, Intermediate, Expert), and edit/save requirement definitions interactively.")
+    st.markdown("Inspect loaded specification text, examine multi-tier technical expansions, and edit/save requirement definitions interactively.")
     
     if st.session_state.selected_spec_name:
         st.markdown(f"### Active Specification: `{st.session_state.selected_spec_name}`")
@@ -146,7 +148,6 @@ with tab1:
             updated_requirements = []
             for i, req in enumerate(st.session_state.graph_state["requirements"]):
                 with st.expander(f"Requirement [{req['req_id']}] - {req['category']} ({req['priority']})"):
-                    # Live HITL Editing Fields
                     new_desc = st.text_area(f"Edit Description ({req['req_id']})", value=req["description"], key=f"edit_desc_{i}")
                     
                     cat_options = ["Protocol", "Timing", "Error Handling", "Performance", "Functional"]
@@ -346,3 +347,43 @@ with tab8:
         st.dataframe(df_logs, use_container_width=True)
     else:
         st.info("No execution logs recorded yet. Finalize the specification to trigger agent execution.")
+
+with tab9:
+    st.subheader("🧠 PragyanAI Master Verification Tutor & Guide")
+    st.markdown("Your interactive training companion explaining specifications, guiding critical engineering questions, and breaking down test case categories and coverage models.")
+    
+    active_spec = st.session_state.selected_spec_name or "General Hardware Protocol"
+    domain_type = SAMPLE_SPECIFICATIONS.get(active_spec, {}).get("domain", "System Interconnect")
+    req_count = len(st.session_state.graph_state["requirements"])
+    
+    tutor_data = get_tutor_guidance(active_spec, domain_type, req_count)
+    
+    st.markdown(f"### 🎯 Active Training Context: `{active_spec}`")
+    
+    col_t1, col_t2 = st.columns(2)
+    
+    with col_t1:
+        st.markdown("#### ❓ Critical Questions an Engineer Should Ask")
+        st.markdown("When reviewing a new hardware microarchitecture specification, always investigate:")
+        for q in tutor_data["guided_questions"]:
+            st.markdown(f"* {q}")
+            
+    with col_t2:
+        st.markdown("#### 🗺️ Spec-to-Testcase Mapping Strategy")
+        st.info(tutor_data["mapping_strategy"])
+        
+    st.markdown("---")
+    st.markdown("### 🧪 Comprehensive Test Case Categories Explained")
+    cols_tc = st.columns(2)
+    for idx, tc_type in enumerate(tutor_data["test_types"]):
+        with cols_tc[idx % 2]:
+            st.markdown(f"**📌 {tc_type['type']}**")
+            st.write(tc_type["desc"])
+            
+    st.markdown("---")
+    st.markdown("### 📊 Verification Coverage Models & Closure Framework")
+    cols_cv = st.columns(3)
+    for idx, cv_model in enumerate(tutor_data["coverage_models"]):
+        with cols_cv[idx]:
+            st.markdown(f"**🎯 {cv_model['model']}**")
+            st.write(cv_model["desc"])
