@@ -49,13 +49,16 @@ class CoverageModel(TypedDict):
     group_name: str
     bins_description: str
 
-class TraceabilityRow(TypedDict):
+class TraceRecord(TypedDict):
     req_id: str
     requirement: str
     vplan_id: str
     test_id: str
     assertion_id: str
     status: str
+
+# Backwards-compatibility alias
+TraceabilityRow = TraceRecord
 
 class LogRecord(TypedDict):
     timestamp: str
@@ -73,5 +76,5 @@ class AgentState(TypedDict):
     test_cases: List[TestCase]
     assertions: List[Assertion]
     coverage_models: List[CoverageModel]
-    traceability_matrix: List[TraceabilityRow]
+    traceability_matrix: List[TraceRecord]
     execution_logs: List[LogRecord]
